@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tic-Tac-Toe</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Bebas+Neue&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --x-color: #ff3c5f;
+    --o-color: #00d4ff;
+    --line: #1e1e2e;
+    --text: #e8e8f0;
+    --muted: #4a4a6a;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* Background grid */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+  }
+
+  .title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(2.5rem, 6vw, 4.5rem);
+    letter-spacing: 0.15em;
+    margin-bottom: 0.2em;
+    background: linear-gradient(135deg, var(--x-color), var(--o-color));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .scoreboard {
+    display: flex;
+    gap: 2rem;
+    margin-bottom: 2rem;
+    align-items: center;
+  }
+
+  .score-card {
+    text-align: center;
+    padding: 0.8rem 1.5rem;
+    border: 1px solid var(--line);
+    background: var(--surface);
+    border-radius: 4px;
+    min-width: 90px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .score-card.x-card { border-color: rgba(255,60,95,0.4); }
+  .score-card.o-card { border-color: rgba(0,212,255,0.4); }
+
+  .score-card .label {
+    font-size: 0.65rem;
+    letter-spacing: 0.2em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+
+  .score-card .player-sym {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.4rem;
+    letter-spacing: 0.1em;
+  }
+  .score-card.x-card .player-sym { color: var(--x-color); }
+  .score-card.o-card .player-sym { color: var(--o-color); }
+
+  .score-card .score-num {
+    font-size: 1.8rem;
+    font-weight: 700;
+    line-height: 1;
+  }
+
+  .score-divider {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.5rem;
+    color: var(--muted);
+    letter-spacing: 0.2em;
+  }
+
+  .status-bar {
+    font-size: 0.75rem;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 1.5rem;
+    height: 1.2em;
+    transition: color 0.3s;
+  }
+
+  .status-bar.x-turn { color: var(--x-color); }
+  .status-bar.o-turn { color: var(--o-color); }
+  .status-bar.win { color: #ffd700; }
+  .status-bar.draw { color: var(--muted); }
+
+  .board {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    background: var(--line);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 6px;
+    margin-bottom: 1.5rem;
+  }
+
+  .cell {
+    width: clamp(90px, 22vw, 130px);
+    height: clamp(90px, 22vw, 130px);
+    background: var(--surface);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(2.5rem, 8vw, 4rem);
+    letter-spacing: 0.05em;
+    transition: background 0.15s, transform 0.1s;
+    user-select: none;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .cell:hover:not(.taken) {
+    background: #1a1a28;
+    transform: scale(1.03);
+  }
+
+  .cell.taken { cursor: default; }
+
+  .cell.x { color: var(--x-color); animation: pop 0.2s ease-out; }
+  .cell.o { color: var(--o-color); animation: pop 0.2s ease-out; }
+  .cell.win-cell { background: rgba(255,215,0,0.08); }
+
+  @keyframes pop {
+    0% { transform: scale(0.5); opacity: 0; }
+    70% { transform: scale(1.1); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  .btn {
+    background: transparent;
+    border: 1px solid var(--muted);
+    color: var(--muted);
+    font-family: 'Space Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    padding: 0.6rem 1.5rem;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: all 0.2s;
+  }
+
+  .btn:hover {
+    border-color: var(--text);
+    color: var(--text);
+    background: rgba(255,255,255,0.05);
+  }
+
+  .btn-row { display: flex; gap: 1rem; }
+
+  /* Win line overlay */
+  .win-line {
+    display: none;
+  }
+</style>
+</head>
+<body>
+
+<div class="title">TIC-TAC-TOE</div>
+
+<div class="scoreboard">
+  <div class="score-card x-card">
+    <div class="label">Player</div>
+    <div class="player-sym">X</div>
+    <div class="score-num" id="score-x">0</div>
+  </div>
+  <div class="score-divider">VS</div>
+  <div class="score-card o-card">
+    <div class="label">Player</div>
+    <div class="player-sym">O</div>
+    <div class="score-num" id="score-o">0</div>
+  </div>
+</div>
+
+<div class="status-bar x-turn" id="status">Giliran X</div>
+
+<div class="board" id="board">
+  <div class="cell" data-i="0"></div>
+  <div class="cell" data-i="1"></div>
+  <div class="cell" data-i="2"></div>
+  <div class="cell" data-i="3"></div>
+  <div class="cell" data-i="4"></div>
+  <div class="cell" data-i="5"></div>
+  <div class="cell" data-i="6"></div>
+  <div class="cell" data-i="7"></div>
+  <div class="cell" data-i="8"></div>
+</div>
+
+<div class="btn-row">
+  <button class="btn" id="btn-reset">Main Lagi</button>
+  <button class="btn" id="btn-clear">Reset Skor</button>
+</div>
+
+<script>
+  const cells = document.querySelectorAll('.cell');
+  const status = document.getElementById('status');
+  const scoreX = document.getElementById('score-x');
+  const scoreO = document.getElementById('score-o');
+
+  const WINS = [
+    [0,1,2],[3,4,5],[6,7,8],
+    [0,3,6],[1,4,7],[2,5,8],
+    [0,4,8],[2,4,6]
+  ];
+
+  let board = Array(9).fill('');
+  let current = 'X';
+  let gameOver = false;
+  let scores = { X: 0, O: 0 };
+
+  function setStatus(msg, cls) {
+    status.textContent = msg;
+    status.className = 'status-bar ' + (cls || '');
+  }
+
+  function checkWin(b, p) {
+    return WINS.find(combo => combo.every(i => b[i] === p)) || null;
+  }
+
+  function handleClick(e) {
+    const i = +e.currentTarget.dataset.i;
+    if (board[i] || gameOver) return;
+
+    board[i] = current;
+    const cell = cells[i];
+    cell.textContent = current;
+    cell.classList.add('taken', current.toLowerCase());
+
+    const winCombo = checkWin(board, current);
+    if (winCombo) {
+      winCombo.forEach(idx => cells[idx].classList.add('win-cell'));
+      scores[current]++;
+      scoreX.textContent = scores.X;
+      scoreO.textContent = scores.O;
+      setStatus(`🎉 ${current} Menang!`, 'win');
+      gameOver = true;
+      return;
+    }
+
+    if (board.every(v => v)) {
+      setStatus('Seri!', 'draw');
+      gameOver = true;
+      return;
+    }
+
+    current = current === 'X' ? 'O' : 'X';
+    setStatus(`Giliran ${current}`, current === 'X' ? 'x-turn' : 'o-turn');
+  }
+
+  function resetGame() {
+    board = Array(9).fill('');
+    current = 'X';
+    gameOver = false;
+    cells.forEach(c => {
+      c.textContent = '';
+      c.className = 'cell';
+    });
+    setStatus('Giliran X', 'x-turn');
+  }
+
+  cells.forEach(c => c.addEventListener('click', handleClick));
+  document.getElementById('btn-reset').addEventListener('click', resetGame);
+  document.getElementById('btn-clear').addEventListener('click', () => {
+    scores = { X: 0, O: 0 };
+    scoreX.textContent = 0;
+    scoreO.textContent = 0;
+    resetGame();
+  });
+</script>
+</body>
+</html>
